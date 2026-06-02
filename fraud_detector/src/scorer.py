@@ -1,35 +1,34 @@
 import logging
-import os
-
+import numpy as np
 import pandas as pd
-from catboost import CatBoostClassifier
 
-
-# Настройка логгера
 logger = logging.getLogger(__name__)
+model_th = 0.75
 
-logger.info('Importing pretrained model...')
-
-# Import model
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-model = CatBoostClassifier()
-model.load_model('./models/my_catboost.cbm')
-
-# Define optimal threshold
-THRESHOLD = 0.5
-logger.info('Pretrained model imported successfully...')
-
-
-# Make prediction
-def make_pred(dt, source_info="kafka"):
-    y_proba = model.predict_proba(dt)[:, 1]
-
-    # Calculate score
-    submission = pd.DataFrame({
-        'score': y_proba,
-        'fraud_flag': (y_proba > THRESHOLD) * 1,
-    })
-    logger.info(f'Prediction complete for data from {source_info}')
-
-    # Return proba for positive class
-    return submission, y_proba
+def make_pred(input_df, model):
+    """
+    Make predictions using the loaded model
+    
+    Args:
+        input_df: DataFrame with preprocessed features
+        model: Loaded CatBoost model
+    
+    Returns:
+        tuple: (predictions_binary, predictions_proba)
+    """
+    try:
+        # Получаем вероятности
+        predictions_proba = model.predict_proba(input_df)[:, 1]
+        
+        # Бинаризуем по порогу
+        predictions_binary = (predictions_proba > model_th).astype(int)
+        
+        logger.info(f"Prediction complete. Shape: {predictions_binary.shape}")
+        logger.info(f"Prediction distribution: 0: {sum(predictions_binary==0)}, 1: {sum(predictions_binary==1)}")
+        logger.info(f"Prediction probabilities - min: {predictions_proba.min():.4f}, max: {predictions_proba.max():.4f}, mean: {predictions_proba.mean():.4f}")
+        
+        return predictions_binary, predictions_proba
+        
+    except Exception as e:
+        logger.error(f"Error in make_pred: {e}")
+        raise

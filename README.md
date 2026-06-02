@@ -1,6 +1,6 @@
-# Shad MTS MLOps Project 2
+# MLOps Project 2 - Real-time Fraud Detection System
 
-Это учебный проект построения системы обнаружения мошеннических транзакций на основе потоковых данных с использованием Kafka, PostgreSQL, Streamlit UI и ML-модели (CatBoost). Проект реализует полный цикл обработки данных от загрузки до визуализации результатов.
+Это учебный проект построения системы обнаружения мошеннических транзакций на основе потоковых данных с использованием Kafka, PostgreSQL, Streamlit UI и ML-модели (CatBoost). Проект реализует полный цикл обработки данных от загрузки до визуализации результатов в реальном времени.
 
 Датасет можно найти [здесь](https://www.kaggle.com/competitions/teta-ml-1-2025/data).
 
@@ -12,9 +12,10 @@
 
 | Сервис           | Описание |
 |------------------|----------|
-| **Kafka**        | Шина сообщений для потоковой передачи данных между компонентами |
 | **Zookeeper**    | Управление кластером Kafka |
-| **Kafka UI**     | Веб-интерфейс для мониторинга Kafka |
+| **Kafka**        | Шина сообщений для потоковой передачи данных между компонентами |
+| **kafka-setup**  | Сервис для создания топиков Kafka при старте |
+| **kafka-ui**     | Веб-интерфейс для мониторинга и управления Kafka |
 | **fraud_detector** | Микросервис, выполняющий предобработку данных и инференс модели CatBoost |
 | **scoring_writer** | Потребитель Kafka, сохраняет результаты скоринга в PostgreSQL |
 | **PostgreSQL**   | Хранилище результатов скоринга |
@@ -29,30 +30,44 @@
 
 ```
 .
-├── fraud_detector/           # Микросервис скоринга транзакций
+├── fraud_detector/                 # Микросервис скоринга транзакций
 │   ├── app/
+│   │   ├── __init__.py
+│   │   └── app.py                  # Основное приложение FastAPI
 │   ├── models/
+│   │   └── my_catboost.cbm         # Обученная модель CatBoost
 │   ├── src/
+│   │   ├── __init__.py
+│   │   ├── preprocessing_inference.py  # Преобработка данных
+│   │   └── scorer.py               # Логика скоринга
 │   ├── Dockerfile
 │   └── requirements.txt
-├── interface/                # Веб-интерфейс (Streamlit)
-│   ├── app.py
+├── interface/                      # Веб-интерфейс (Streamlit)
+│   ├── app.py                      # Основное приложение Streamlit
 │   ├── Dockerfile
 │   └── requirements.txt
-├── scoring_writer/           # Сервис записи результатов в Postgres
-│   ├── app.py
+├── scoring_writer/                 # Сервис записи результатов в Postgres
+│   ├── app.py                      # Основное приложение
 │   ├── Dockerfile
 │   └── requirements.txt
-├── prometheus/               # Конфигурация Prometheus
+├── prometheus/                     # Конфигурация Prometheus
 │   └── prometheus.yml
-├── grafana/                  # Конфигурация и дашборды Grafana
+├── grafana/                        # Конфигурация и дашборды Grafana
 │   ├── provisioning/
+│   │   ├── dashboards/
+│   │   │   └── dashboards.yaml
+│   │   └── datasources/
+│   │       ├── postgres.yaml
+│   │       └── prometheus.yaml
 │   └── dashboards/
-├── docker-compose.yaml       # Основной файл Docker Compose
-├── .env                      # Файл с переменными окружения (не в репозитории)
-├── .env.example              # Пример файла переменных окружения
-├── .gitignore                # Игнорирование приватных и ненужных файлов
-└── README.md                 # Readme файл
+│       ├── fraud_detection_dashboard.json
+│       ├── node_exporter.json
+│       └── scoring.json
+├── docker-compose.yaml             # Основной файл Docker Compose
+├── .env                            # Файл с переменными окружения (не в репозитории)
+├── .env.example                    # Пример файла переменных окружения
+├── .gitignore                      # Игнорирование приватных и ненужных файлов
+└── README.md                       # Readme файл
 ```
 
 ---
@@ -104,8 +119,8 @@
 ### 1. Клонируйте репозиторий
 
 ```bash
-git clone https://github.com/OrlovAlexandr/shad_mlops_2.git
-cd shad_mlops_2
+git clone https://github.com/Artem-Koblov/mlOps_hw2.git
+cd mlOps_hw2
 ```
 
 ### 2. Создайте `.env` файл
@@ -138,7 +153,7 @@ docker-compose up --build
 |----------------|---------------------------------|
 | **Streamlit UI** | http://localhost:8501           |
 | **Kafka UI**     | http://localhost:8080           |
-| **PostgreSQL**   | host: `postgres`, port: `5432` |
+| **PostgreSQL**   | host: `localhost`, port: `5423` |
 | **Prometheus**   | http://localhost:9090           |
 | **Grafana**      | http://localhost:3000           |
 
